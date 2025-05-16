@@ -38,7 +38,7 @@ const ChatPanel = () => {
 
       if (data.length === 0) {
         // Add welcome message for new users
-        const welcomeMessage = {
+        const welcomeMessage: Message = {
           id: 'welcome',
           content: "Hello! I'm your Covenant University AI Assistant. How can I help you today?",
           sender: 'ai',
@@ -53,7 +53,14 @@ const ChatPanel = () => {
           user_id: user!.id
         });
       } else {
-        setMessages(data as Message[]);
+        // Convert string dates to Date objects and ensure sender is 'ai' or 'user'
+        const formattedMessages: Message[] = data.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          sender: msg.sender as 'ai' | 'user',
+          created_at: new Date(msg.created_at)
+        }));
+        setMessages(formattedMessages);
       }
     } catch (error: any) {
       console.error('Error fetching messages:', error);
@@ -67,10 +74,10 @@ const ChatPanel = () => {
     if (!newMessage.trim() || !user) return;
     
     // Add user message
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now().toString(),
       content: newMessage,
-      sender: 'user' as const,
+      sender: 'user',
       created_at: new Date()
     };
     
@@ -87,10 +94,10 @@ const ChatPanel = () => {
       
       // Simulate AI response (in real app, you'd call an API here)
       setTimeout(async () => {
-        const aiMessage = {
+        const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           content: "I'm working on providing the best answer for you. This is a simulated response for the demo.",
-          sender: 'ai' as const,
+          sender: 'ai',
           created_at: new Date()
         };
         
@@ -150,7 +157,7 @@ const ChatPanel = () => {
               >
                 <p>{message.content}</p>
                 <span className="text-xs opacity-70 block mt-1">
-                  {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {message.created_at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
             </div>
