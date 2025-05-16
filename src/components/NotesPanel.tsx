@@ -1,16 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, Edit, Save, ChevronDown, ChevronUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/components/ui/sonner";
 
 interface Note {
-  id: number;
+  id: string;
   title: string;
   content: string;
   color: string;
-  timestamp: Date;
+  created_at: string;
+  updated_at: string;
   isExpanded: boolean;
   isEditing: boolean;
 }
@@ -24,79 +28,155 @@ const colors = [
 ];
 
 const NotesPanel = () => {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: 1,
-      title: 'Biochemistry Study Plan',
-      content: 'Review chapter 5-7 for the upcoming quiz. Focus on metabolic pathways and enzyme kinetics.',
-      color: colors[0],
-      timestamp: new Date(),
-      isExpanded: true,
-      isEditing: false,
-    },
-    {
-      id: 2,
-      title: 'Physics Formulas',
-      content: 'Remember: F=ma, E=mc², PV=nRT',
-      color: colors[1],
-      timestamp: new Date(),
-      isExpanded: false,
-      isEditing: false,
-    }
-  ]);
-  
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [newNote, setNewNote] = useState({ title: '', content: '', color: colors[0] });
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const handleAddNote = () => {
-    if (newNote.title.trim() === '') return;
-    
-    const note: Note = {
-      id: Date.now(),
-      title: newNote.title,
-      content: newNote.content,
-      color: newNote.color,
-      timestamp: new Date(),
-      isExpanded: true,
-      isEditing: false,
-    };
-    
-    setNotes([note, ...notes]);
-    setNewNote({ title: '', content: '', color: colors[0] });
-    setIsCreating(false);
+  useEffect(() => {
+    if (user) {
+      fetchNotes();
+    }
+  }, [user]);
+
+  const fetchNotes = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const notesWithUI = (data || []).map(note => ({
+        ...note,
+        isExpanded: true,
+        isEditing: false
+      }));
+
+      setNotes(notesWithUI);
+    } catch (error: any) {
+      console.error('Error fetching notes:', error);
+      toast.error('Failed to load notes');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleExpand = (id: number) => {
+  const handleAddNote = async () => {
+    if (newNote.title.trim() === '' || !user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          title: newNote.title,
+          content: newNote.content,
+          color: newNote.color,
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const noteWithUI = {
+        ...data,
+        isExpanded: true,
+        isEditing: false
+      };
+      
+      setNotes([noteWithUI, ...notes]);
+      setNewNote({ title: '', content: '', color: colors[0] });
+      setIsCreating(false);
+      toast.success('Note created successfully');
+    } catch (error: any) {
+      console.error('Error adding note:', error);
+      toast.error('Failed to create note');
+    }
+  };
+
+  const toggleExpand = (id: string) => {
     setNotes(notes.map(note => 
       note.id === id ? { ...note, isExpanded: !note.isExpanded } : note
     ));
   };
 
-  const toggleEdit = (id: number) => {
+  const toggleEdit = (id: string) => {
     setNotes(notes.map(note => 
       note.id === id ? { ...note, isEditing: !note.isEditing } : note
     ));
   };
 
-  const updateNote = (id: number, title: string, content: string) => {
-    setNotes(notes.map(note => 
-      note.id === id ? { ...note, title, content, isEditing: false } : note
-    ));
+  const updateNote = async (id: string, title: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({ 
+          title, 
+          content,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotes(notes.map(note => 
+        note.id === id ? { ...note, title, content, isEditing: false } : note
+      ));
+
+      toast.success('Note updated successfully');
+    } catch (error: any) {
+      console.error('Error updating note:', error);
+      toast.error('Failed to update note');
+    }
   };
 
-  const deleteNote = (id: number) => {
-    setNotes(notes.filter(note => note.id !== id));
+  const deleteNote = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotes(notes.filter(note => note.id !== id));
+      toast.success('Note deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting note:', error);
+      toast.error('Failed to delete note');
+    }
   };
 
-  const changeColor = (id: number) => {
-    setNotes(notes.map(note => {
-      if (note.id === id) {
-        const currentIndex = colors.indexOf(note.color);
-        const nextIndex = (currentIndex + 1) % colors.length;
-        return { ...note, color: colors[nextIndex] };
-      }
-      return note;
-    }));
+  const changeColor = async (id: string) => {
+    const note = notes.find(note => note.id === id);
+    if (!note) return;
+
+    const currentIndex = colors.indexOf(note.color);
+    const nextIndex = (currentIndex + 1) % colors.length;
+    const newColor = colors[nextIndex];
+
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .update({ 
+          color: newColor,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setNotes(notes.map(n => 
+        n.id === id ? { ...n, color: newColor } : n
+      ));
+    } catch (error: any) {
+      console.error('Error updating note color:', error);
+      toast.error('Failed to update note color');
+    }
   };
 
   return (
@@ -114,6 +194,13 @@ const NotesPanel = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
+        {/* Loading Indicator */}
+        {loading && (
+          <div className="flex justify-center items-center h-32">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-covenant-primary"></div>
+          </div>
+        )}
+
         {/* New Note Form */}
         {isCreating && (
           <div className="card-note border-l-4 border-covenant-accent mb-5 animate-pop">
@@ -152,16 +239,18 @@ const NotesPanel = () => {
         )}
 
         {/* Notes List */}
-        {notes.map((note) => (
+        {!loading && notes.map((note) => (
           <div 
             key={note.id} 
-            className={`card-note ${note.color} animate-fade-in`}
+            className={`card-note border-l-4 ${note.color} animate-fade-in mb-4 bg-white p-4 rounded-lg shadow`}
           >
             <div className="flex justify-between items-center">
               {note.isEditing ? (
                 <Input
                   value={note.title}
-                  onChange={(e) => updateNote(note.id, e.target.value, note.content)}
+                  onChange={(e) => setNotes(notes.map(n => 
+                    n.id === note.id ? { ...n, title: e.target.value } : n
+                  ))}
                   className="font-medium"
                 />
               ) : (
@@ -201,7 +290,9 @@ const NotesPanel = () => {
                 {note.isEditing ? (
                   <Textarea
                     value={note.content}
-                    onChange={(e) => updateNote(note.id, note.title, e.target.value)}
+                    onChange={(e) => setNotes(notes.map(n => 
+                      n.id === note.id ? { ...n, content: e.target.value } : n
+                    ))}
                     className="my-2"
                     rows={3}
                   />
@@ -211,7 +302,7 @@ const NotesPanel = () => {
                 
                 <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
                   <span>
-                    {note.timestamp.toLocaleDateString()} {note.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(note.created_at).toLocaleDateString()} {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                   
                   {note.isEditing && (
@@ -227,7 +318,7 @@ const NotesPanel = () => {
                       </div>
                       <Button 
                         size="sm" 
-                        onClick={() => toggleEdit(note.id)}
+                        onClick={() => updateNote(note.id, note.title, note.content)}
                         className="bg-covenant-primary hover:bg-covenant-primary/90 h-6 text-xs"
                       >
                         <Save size={12} className="mr-1" /> Save
@@ -240,7 +331,7 @@ const NotesPanel = () => {
           </div>
         ))}
         
-        {notes.length === 0 && !isCreating && (
+        {!loading && notes.length === 0 && !isCreating && (
           <div className="flex flex-col items-center justify-center p-8 text-gray-400">
             <p>No notes yet</p>
             <Button 

@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, BookOpen, ListTodo } from "lucide-react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/context/AuthContext";
+import UserDropdown from "@/components/UserDropdown";
 
 const Index = () => {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('chat');
+  const { user } = useAuth();
 
   // Animation control
   const [isLoaded, setIsLoaded] = useState(false);
@@ -27,6 +30,10 @@ const Index = () => {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-covenant-background flex flex-col w-full">
+        <div className="fixed top-0 right-0 p-4 z-20">
+          <UserDropdown />
+        </div>
+        
         <Header />
         
         <div className={`flex-1 pt-16 pb-2 px-2 md:px-4 lg:px-8 transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>

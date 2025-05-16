@@ -1,51 +1,112 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, BookOpen, Clock, Lightbulb } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/components/ui/sonner";
 
 interface Message {
-  id: number;
+  id: string;
   content: string;
   sender: 'ai' | 'user';
-  timestamp: Date;
+  created_at: Date;
 }
 
 const ChatPanel = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      content: "Hello! I'm your Covenant University AI Assistant. How can I help you today?",
-      sender: 'ai',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  useEffect(() => {
+    if (user) {
+      fetchMessages();
+    }
+  }, [user]);
+
+  const fetchMessages = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data.length === 0) {
+        // Add welcome message for new users
+        const welcomeMessage = {
+          id: 'welcome',
+          content: "Hello! I'm your Covenant University AI Assistant. How can I help you today?",
+          sender: 'ai',
+          created_at: new Date()
+        };
+        setMessages([welcomeMessage]);
+        
+        // Save welcome message to database
+        await supabase.from('chat_history').insert({
+          content: welcomeMessage.content,
+          sender: welcomeMessage.sender,
+          user_id: user!.id
+        });
+      } else {
+        setMessages(data as Message[]);
+      }
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
+      toast.error('Failed to load chat history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !user) return;
     
     // Add user message
-    const userMessage: Message = {
-      id: messages.length + 1,
+    const userMessage = {
+      id: Date.now().toString(),
       content: newMessage,
-      sender: 'user',
-      timestamp: new Date()
+      sender: 'user' as const,
+      created_at: new Date()
     };
     
     setMessages((prev) => [...prev, userMessage]);
     setNewMessage('');
     
-    // Simulate AI response (in real app, you'd call an API here)
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: messages.length + 2,
-        content: "I'm working on providing the best answer for you. This is a simulated response for the demo.",
-        sender: 'ai',
-        timestamp: new Date()
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    // Save user message to database
+    try {
+      await supabase.from('chat_history').insert({
+        content: userMessage.content,
+        sender: userMessage.sender,
+        user_id: user.id
+      });
+      
+      // Simulate AI response (in real app, you'd call an API here)
+      setTimeout(async () => {
+        const aiMessage = {
+          id: (Date.now() + 1).toString(),
+          content: "I'm working on providing the best answer for you. This is a simulated response for the demo.",
+          sender: 'ai' as const,
+          created_at: new Date()
+        };
+        
+        setMessages((prev) => [...prev, aiMessage]);
+        
+        // Save AI message to database
+        await supabase.from('chat_history').insert({
+          content: aiMessage.content,
+          sender: aiMessage.sender,
+          user_id: user.id
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error saving message:', error);
+      toast.error('Failed to send message');
+    }
   };
 
   return (
@@ -70,25 +131,31 @@ const ChatPanel = () => {
       
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div 
-            key={message.id} 
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-          >
-            <div 
-              className={`max-w-[80%] p-3 rounded-lg ${
-                message.sender === 'user' 
-                  ? 'bg-covenant-primary text-white rounded-tr-none' 
-                  : 'bg-white border border-covenant-accent/20 rounded-tl-none'
-              }`}
-            >
-              <p>{message.content}</p>
-              <span className="text-xs opacity-70 block mt-1">
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-covenant-primary"></div>
           </div>
-        ))}
+        ) : (
+          messages.map((message) => (
+            <div 
+              key={message.id} 
+              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+            >
+              <div 
+                className={`max-w-[80%] p-3 rounded-lg ${
+                  message.sender === 'user' 
+                    ? 'bg-covenant-primary text-white rounded-tr-none' 
+                    : 'bg-white border border-covenant-accent/20 rounded-tl-none'
+                }`}
+              >
+                <p>{message.content}</p>
+                <span className="text-xs opacity-70 block mt-1">
+                  {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
       
       {/* Input area */}
@@ -106,7 +173,11 @@ const ChatPanel = () => {
             onChange={(e) => setNewMessage(e.target.value)}
             className="flex-1"
           />
-          <Button type="submit" className="bg-covenant-primary hover:bg-covenant-primary/90">
+          <Button 
+            type="submit" 
+            className="bg-covenant-primary hover:bg-covenant-primary/90"
+            disabled={loading || !newMessage.trim()}
+          >
             <Send size={18} />
           </Button>
         </form>
