@@ -2,6 +2,7 @@
 import Navigation from "./Navigation";
 import UserDropdown from "../UserDropdown";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   return (
@@ -18,15 +19,21 @@ const Header = () => {
           transition={{ delay: 0.2 }}
           className="flex items-center gap-4"
         >
-          <div className="text-3xl">🎓</div>
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold font-serif">
-              CU AI Desk
-            </h1>
-            <p className="text-xs lg:text-sm opacity-90 font-light">
-              by Cynthia
-            </p>
-          </div>
+          <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+            <img 
+              src="/lovable-uploads/ea5aee72-d07f-4031-9b5d-7e126a7439ad.png" 
+              alt="Covenant University Logo" 
+              className="h-12 w-12 object-contain"
+            />
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold font-serif">
+                CU AI Desk
+              </h1>
+              <p className="text-xs lg:text-sm opacity-90 font-light">
+                by Cynthia
+              </p>
+            </div>
+          </Link>
         </motion.div>
         
         <Navigation />
