@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +9,8 @@ import SummarizeNotesPage from "./pages/SummarizeNotesPage";
 import TodoPage from "./pages/TodoPage";
 import RemindersPage from "./pages/RemindersPage";
 import StudyTipsPage from "./pages/StudyTipsPage";
+import HealthTipsPage from "./pages/HealthTipsPage";
+import CalculatorPage from "./pages/CalculatorPage";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { AuthProvider } from "./context/AuthContext";
@@ -70,6 +71,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <StudyTipsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/health-tips" 
+              element={
+                <ProtectedRoute>
+                  <HealthTipsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/calculator" 
+              element={
+                <ProtectedRoute>
+                  <CalculatorPage />
                 </ProtectedRoute>
               } 
             />

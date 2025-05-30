@@ -12,7 +12,9 @@ import {
   GraduationCap,
   TrendingUp,
   Calendar,
-  Brain
+  Brain,
+  Heart,
+  Calculator
 } from "lucide-react";
 
 const Index = () => {
@@ -53,6 +55,20 @@ const Index = () => {
       icon: GraduationCap,
       path: "/study-tips",
       color: "from-indigo-500 to-purple-600"
+    },
+    {
+      title: "Health Tips",
+      description: "Maintain wellness while studying",
+      icon: Heart,
+      path: "/health-tips",
+      color: "from-green-500 to-teal-500"
+    },
+    {
+      title: "Calculator",
+      description: "Quick calculations for your studies",
+      icon: Calculator,
+      path: "/calculator",
+      color: "from-gray-500 to-blue-600"
     }
   ];
 

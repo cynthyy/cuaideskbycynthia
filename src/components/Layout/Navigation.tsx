@@ -10,7 +10,9 @@ import {
   Bell, 
   GraduationCap,
   Menu,
-  Home
+  Home,
+  Heart,
+  Calculator
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,6 +27,8 @@ const Navigation = () => {
     { path: '/todo', label: 'To-Do List', icon: CheckSquare },
     { path: '/reminders', label: 'Reminders', icon: Bell },
     { path: '/study-tips', label: 'Study Tips', icon: GraduationCap },
+    { path: '/health-tips', label: 'Health Tips', icon: Heart },
+    { path: '/calculator', label: 'Calculator', icon: Calculator },
   ];
 
   const NavLink = ({ item, mobile = false }: { item: typeof navItems[0], mobile?: boolean }) => {
