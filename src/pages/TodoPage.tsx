@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Plus, CheckCircle2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,9 +18,13 @@ interface Task {
   category: string;
 }
 
+const categories = ["Academic", "Health", "Fitness", "Social", "General"];
+
 const TodoPage = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [newTaskCategory, setNewTaskCategory] = useState('General');
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   useEffect(() => {
@@ -39,7 +44,7 @@ const TodoPage = () => {
         completed: true,
         priority: 'high',
         dueDate: '2024-05-28',
-        category: 'Study'
+        category: 'Academic'
       },
       {
         id: '3',
@@ -59,12 +64,14 @@ const TodoPage = () => {
       id: Date.now().toString(),
       title: newTask,
       completed: false,
-      priority: 'medium',
-      category: 'General'
+      priority: newTaskPriority,
+      category: newTaskCategory
     };
 
     setTasks(prev => [task, ...prev]);
     setNewTask('');
+    setNewTaskPriority('medium');
+    setNewTaskCategory('General');
   };
 
   const toggleTask = (id: string) => {
@@ -122,21 +129,51 @@ const TodoPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="flex gap-3">
-                <Input
-                  placeholder="What do you need to do?"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addTask()}
-                  className="flex-1 border-purple-200 focus:border-purple-500"
-                />
-                <Button
-                  onClick={addTask}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  <Plus size={18} />
-                  Add Task
-                </Button>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <Input
+                    placeholder="What do you need to do?"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && addTask()}
+                    className="flex-1 border-purple-200 focus:border-purple-500"
+                  />
+                  <Button
+                    onClick={addTask}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Plus size={18} />
+                    Add Task
+                  </Button>
+                </div>
+                
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+                      <SelectTrigger className="border-purple-200 focus:border-purple-500">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <Select value={newTaskPriority} onValueChange={(value: 'high' | 'medium' | 'low') => setNewTaskPriority(value)}>
+                      <SelectTrigger className="border-purple-200 focus:border-purple-500">
+                        <SelectValue placeholder="Priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low Priority</SelectItem>
+                        <SelectItem value="medium">Medium Priority</SelectItem>
+                        <SelectItem value="high">High Priority</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
