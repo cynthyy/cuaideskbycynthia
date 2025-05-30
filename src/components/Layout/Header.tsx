@@ -21,7 +21,7 @@ const Header = () => {
           <div className="text-3xl">🎓</div>
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold font-serif">
-              CU Aide Desk
+              CU AI Desk
             </h1>
             <p className="text-xs lg:text-sm opacity-90 font-light">
               by Cynthia

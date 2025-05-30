@@ -82,7 +82,7 @@ const Index = () => {
               transition={{ delay: 0.2, duration: 0.6 }}
               className="text-5xl lg:text-7xl font-bold bg-gradient-to-r from-purple-600 to-amber-500 bg-clip-text text-transparent mb-6 font-serif"
             >
-              Welcome to CU Aide Desk
+              Welcome to CU AI Desk
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0 }}
@@ -178,7 +178,7 @@ const Index = () => {
           >
             <h2 className="text-3xl font-bold mb-4">Ready to Excel?</h2>
             <p className="text-lg mb-6 opacity-90">
-              Start your productive study session with CU Aide Desk today
+              Start your productive study session with CU AI Desk today
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button

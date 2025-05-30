@@ -72,7 +72,7 @@ const Navigation = () => {
               animate={{ opacity: 1, x: 0 }}
               className="text-xl font-bold text-white mb-8"
             >
-              CU Aide Desk
+              CU AI Desk
             </motion.h2>
             <nav className="space-y-2">
               {navItems.map((item, index) => (
