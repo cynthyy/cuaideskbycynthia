@@ -12,7 +12,8 @@ import {
   Menu,
   Home,
   Heart,
-  Calculator
+  Calculator,
+  Settings
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,10 +22,10 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: Home },
-    { path: '/chatbot', label: 'AI Chatbot', icon: Bot },
-    { path: '/summarize', label: 'Summarize Notes', icon: BookOpen },
-    { path: '/todo', label: 'To-Do List', icon: CheckSquare },
+    { path: '/', label: 'Home', icon: Home },
+    { path: '/chatbot', label: 'Chatbot', icon: Bot },
+    { path: '/summarize', label: 'Notes', icon: BookOpen },
+    { path: '/todo', label: 'Tasks', icon: CheckSquare },
     { path: '/reminders', label: 'Reminders', icon: Bell },
     { path: '/study-tips', label: 'Study Tips', icon: GraduationCap },
     { path: '/health-tips', label: 'Health Tips', icon: Heart },
@@ -40,14 +41,14 @@ const Navigation = () => {
         <motion.div
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
             isActive 
               ? 'bg-white text-purple-700 shadow-md' 
               : 'text-white hover:bg-white/20'
           } ${mobile ? 'w-full' : ''}`}
         >
-          <Icon size={20} />
-          <span className="font-medium">{item.label}</span>
+          <Icon size={18} />
+          <span className="font-medium text-sm">{item.label}</span>
         </motion.div>
       </Link>
     );
@@ -56,7 +57,7 @@ const Navigation = () => {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden lg:flex items-center gap-2">
+      <nav className="hidden lg:flex items-center gap-1">
         {navItems.map((item) => (
           <NavLink key={item.path} item={item} />
         ))}

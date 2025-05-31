@@ -14,9 +14,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import NotesPanel from "@/components/NotesPanel";
-import TodoPanel from "@/components/TodoPanel";
-import ChatPanel from "@/components/ChatPanel";
+import Layout from "@/components/Layout/Layout";
 
 const Index = () => {
   const features = [
@@ -101,7 +99,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100">
+    <Layout>
       <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
         <motion.div 
@@ -119,9 +117,9 @@ const Index = () => {
           >
             <div className="relative">
               <img 
-                src="/lovable-uploads/be140c00-8e6f-44bd-ba21-52a2e9a0090e.png" 
+                src="/lovable-uploads/d7726cc8-b266-4fe1-b563-dbfcbbbf7e9c.png" 
                 alt="Covenant University Logo" 
-                className="h-20 w-20 md:h-24 md:w-24 floating-animation"
+                className="h-20 w-20 md:h-24 md:w-24 floating-animation rounded-full"
               />
               <motion.div
                 className="absolute -inset-2 rounded-full bg-gradient-to-r from-purple-400 to-purple-600 opacity-20 blur-lg"
@@ -233,36 +231,6 @@ const Index = () => {
           ))}
         </motion.div>
 
-        {/* Dashboard Panels */}
-        <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.8 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
-        >
-          <motion.div 
-            className="lg:col-span-1"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <TodoPanel />
-          </motion.div>
-          <motion.div 
-            className="lg:col-span-1"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <NotesPanel />
-          </motion.div>
-          <motion.div 
-            className="lg:col-span-1"
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChatPanel />
-          </motion.div>
-        </motion.div>
-
         {/* Footer with Sparkles */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -277,7 +245,7 @@ const Index = () => {
           </div>
         </motion.div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

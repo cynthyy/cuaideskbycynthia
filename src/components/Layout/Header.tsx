@@ -46,7 +46,7 @@ const Header = () => {
       transition={{ duration: 0.6 }}
       className="cu-gradient shadow-xl sticky top-0 z-50 backdrop-blur-sm"
     >
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <motion.div 
             className="flex items-center space-x-4"
@@ -55,9 +55,9 @@ const Header = () => {
           >
             <div className="flex items-center space-x-3">
               <motion.img 
-                src="/lovable-uploads/be140c00-8e6f-44bd-ba21-52a2e9a0090e.png" 
-                alt="CU Logo" 
-                className="h-10 w-10"
+                src="/lovable-uploads/d7726cc8-b266-4fe1-b563-dbfcbbbf7e9c.png" 
+                alt="Covenant University Logo" 
+                className="h-12 w-12 rounded-full"
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.6 }}
               />
