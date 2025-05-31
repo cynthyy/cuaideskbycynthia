@@ -1,52 +1,72 @@
 
-import Navigation from "./Navigation";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import UserDropdown from "../UserDropdown";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import Navigation from "./Navigation";
 
 const Header = () => {
+  const { user, signOut } = useAuth();
+  const [username, setUsername] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('username, display_name')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error('Error fetching profile:', error);
+            return;
+          }
+
+          if (data) {
+            setUsername(data.username || data.display_name || user.email?.split('@')[0] || '');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
   return (
-    <motion.header 
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, type: "spring" }}
-      className="w-full bg-gradient-to-r from-purple-700 via-purple-600 to-amber-500 text-white py-4 px-6 fixed top-0 left-0 right-0 z-50 shadow-lg"
-    >
-      <div className="flex justify-between items-center max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center gap-4"
-        >
-          <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
-            <img 
-              src="/lovable-uploads/ea5aee72-d07f-4031-9b5d-7e126a7439ad.png" 
-              alt="Covenant University Logo" 
-              className="h-12 w-12 object-contain"
-            />
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold font-serif">
-                CU AI Desk
-              </h1>
-              <p className="text-xs lg:text-sm opacity-90 font-light">
-                by Cynthia
-              </p>
-            </div>
-          </Link>
-        </motion.div>
-        
-        <Navigation />
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <UserDropdown />
-        </motion.div>
+    <header className="bg-gradient-to-r from-purple-600 to-purple-800 shadow-lg sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold text-white font-serif">CU AI Desk</h1>
+            {username && (
+              <span className="text-purple-100 text-sm">
+                Welcome back, {username}!
+              </span>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Navigation />
+            {user ? (
+              <UserDropdown />
+            ) : (
+              <Button 
+                onClick={() => window.location.href = '/auth'}
+                variant="outline" 
+                className="text-purple-600 border-white hover:bg-white/10"
+              >
+                Sign In
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
-    </motion.header>
+    </header>
   );
 };
 
