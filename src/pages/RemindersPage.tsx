@@ -30,6 +30,7 @@ interface Reminder {
   time: string;
   active: boolean;
   created_at: string;
+  user_id: string;
 }
 
 const RemindersPage = () => {
@@ -54,12 +55,12 @@ const RemindersPage = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('reminders')
+        .from('reminders' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReminders(data || []);
+      setReminders((data as Reminder[]) || []);
     } catch (error: any) {
       console.error('Error fetching reminders:', error);
       toast.error('Failed to load reminders');
@@ -73,7 +74,7 @@ const RemindersPage = () => {
 
     try {
       const { data, error } = await supabase
-        .from('reminders')
+        .from('reminders' as any)
         .insert({
           title: formData.title,
           description: formData.description,
@@ -87,7 +88,7 @@ const RemindersPage = () => {
 
       if (error) throw error;
 
-      setReminders(prev => [data, ...prev]);
+      setReminders(prev => [data as Reminder, ...prev]);
       setFormData({ title: '', description: '', date: '', time: '' });
       setShowForm(false);
       toast.success('Reminder created successfully');
@@ -100,7 +101,7 @@ const RemindersPage = () => {
   const deleteReminder = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('reminders')
+        .from('reminders' as any)
         .delete()
         .eq('id', id);
 
@@ -117,7 +118,7 @@ const RemindersPage = () => {
   const toggleReminder = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('reminders')
+        .from('reminders' as any)
         .update({ active: !currentStatus })
         .eq('id', id);
 
