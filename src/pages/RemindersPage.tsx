@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +59,7 @@ const RemindersPage = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReminders((data as Reminder[]) || []);
+      setReminders((data as unknown as Reminder[]) || []);
     } catch (error: any) {
       console.error('Error fetching reminders:', error);
       toast.error('Failed to load reminders');
@@ -88,7 +87,7 @@ const RemindersPage = () => {
 
       if (error) throw error;
 
-      setReminders(prev => [data as Reminder, ...prev]);
+      setReminders(prev => [data as unknown as Reminder, ...prev]);
       setFormData({ title: '', description: '', date: '', time: '' });
       setShowForm(false);
       toast.success('Reminder created successfully');
