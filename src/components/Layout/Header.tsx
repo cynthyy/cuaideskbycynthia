@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import UserDropdown from "../UserDropdown";
 import Navigation from "./Navigation";
+import { motion } from "framer-motion";
+import { GraduationCap, Sparkles } from "lucide-react";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -38,17 +40,50 @@ const Header = () => {
   }, [user]);
 
   return (
-    <header className="bg-gradient-to-r from-purple-600 to-purple-800 shadow-lg sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3">
+    <motion.header 
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.6 }}
+      className="cu-gradient shadow-xl sticky top-0 z-50 backdrop-blur-sm"
+    >
+      <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-white font-serif">CU AI Desk</h1>
+          <motion.div 
+            className="flex items-center space-x-4"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex items-center space-x-3">
+              <motion.img 
+                src="/lovable-uploads/be140c00-8e6f-44bd-ba21-52a2e9a0090e.png" 
+                alt="CU Logo" 
+                className="h-10 w-10"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.6 }}
+              />
+              <div>
+                <h1 className="text-xl font-bold text-white font-playfair">CU AI Desk</h1>
+                <div className="flex items-center space-x-1 text-purple-100 text-xs">
+                  <GraduationCap className="w-3 h-3" />
+                  <span>Covenant University</span>
+                </div>
+              </div>
+            </div>
+            
             {username && (
-              <span className="text-purple-100 text-sm">
-                Welcome back, {username}!
-              </span>
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="hidden md:flex items-center space-x-2 text-purple-100 bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  Welcome back, {username}! 😊
+                </span>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
           
           <div className="flex items-center space-x-4">
             <Navigation />
@@ -58,7 +93,7 @@ const Header = () => {
               <Button 
                 onClick={() => window.location.href = '/auth'}
                 variant="outline" 
-                className="text-purple-600 border-white hover:bg-white/10"
+                className="text-white border-white/30 hover:bg-white/10 hover:border-white/50 transition-all duration-300"
               >
                 Sign In
               </Button>
@@ -66,7 +101,7 @@ const Header = () => {
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };
 

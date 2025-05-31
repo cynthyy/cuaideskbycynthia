@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { Send, Bot, User, Sparkles, BookOpen, Heart, Calculator } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatMessage {
   id: string;
@@ -16,17 +16,32 @@ const ChatbotPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    // Welcome message
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
     const welcomeMessage: ChatMessage = {
       id: 'welcome',
-      content: "Hello! I'm your CU AI Assistant. How can I help you with your studies today?",
+      content: "Hello! I'm your CU AI Assistant! 🤖✨ I'm here to help you with study tips, health advice, university life, and much more. What would you like to know today?",
       sender: 'bot',
       timestamp: new Date()
     };
     setMessages([welcomeMessage]);
   }, []);
+
+  const suggestedQuestions = [
+    "How can I improve my study habits?",
+    "What are some healthy eating tips for students?",
+    "How do I manage stress during exams?",
+    "Tell me about time management techniques"
+  ];
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -42,103 +57,229 @@ const ChatbotPage = () => {
     setNewMessage('');
     setIsLoading(true);
 
-    // Simulate API call (replace with your FastAPI endpoint)
+    // Simulate AI response
     setTimeout(() => {
+      const responses = [
+        "That's a great question! Based on research and student experiences, here's what I recommend...",
+        "I'd be happy to help you with that! Here are some proven strategies that work well for Covenant University students...",
+        "Excellent topic! Let me share some insights that can really make a difference in your academic journey...",
+        "I understand your concern. Here's some practical advice that many students find helpful..."
+      ];
+
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: "I'm processing your request. This will connect to your FastAPI backend soon!",
+        content: responses[Math.floor(Math.random() * responses.length)] + " This will be connected to a real AI backend soon for more personalized responses! 🚀",
         sender: 'bot',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
       setIsLoading(false);
-    }, 1000);
+    }, 1500);
+  };
+
+  const handleSuggestedQuestion = (question: string) => {
+    setNewMessage(question);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-amber-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-4xl mx-auto"
+        className="container mx-auto px-4 py-8 max-w-4xl"
       >
+        {/* Header */}
         <div className="text-center mb-8">
-          <motion.h1 
-            initial={{ scale: 0.9 }}
-            animate={{ scale: 1 }}
-            className="text-4xl font-bold text-purple-800 mb-2 font-serif"
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="flex justify-center mb-4"
           >
-            🧠 AI Chatbot Assistant
+            <div className="relative">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+                <Bot className="w-8 h-8 text-white" />
+              </div>
+              <motion.div
+                className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center"
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Sparkles className="w-3 h-3 text-white" />
+              </motion.div>
+            </div>
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-800 via-purple-600 to-blue-600 bg-clip-text text-transparent font-playfair mb-2"
+          >
+            CU-AI Chat Assistant
           </motion.h1>
-          <p className="text-purple-600">Your intelligent study companion</p>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="text-lg text-purple-600 font-medium"
+          >
+            Your intelligent study companion for university life 🎓
+          </motion.p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6 min-h-[600px] flex flex-col">
+        {/* Chat Container */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="cu-card min-h-[600px] flex flex-col"
+        >
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-            {messages.map((message, index) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, x: message.sender === 'user' ? 20 : -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`flex items-start gap-3 max-w-[70%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.sender === 'user' ? 'bg-purple-600' : 'bg-amber-500'
-                  }`}>
-                    {message.sender === 'user' ? <User size={16} className="text-white" /> : <Bot size={16} className="text-white" />}
+          <div className="flex-1 overflow-y-auto space-y-4 p-6 max-h-96">
+            <AnimatePresence>
+              {messages.map((message, index) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, x: message.sender === 'user' ? 20 : -20, y: 10 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`flex items-start gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <motion.div 
+                      className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${
+                        message.sender === 'user' 
+                          ? 'bg-gradient-to-r from-purple-600 to-purple-700' 
+                          : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                      }`}
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {message.sender === 'user' ? 
+                        <User size={16} className="text-white" /> : 
+                        <Bot size={16} className="text-white" />
+                      }
+                    </motion.div>
+                    <motion.div 
+                      className={`p-4 rounded-2xl shadow-md backdrop-blur-sm ${
+                        message.sender === 'user' 
+                          ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-tr-none' 
+                          : 'bg-white/80 text-gray-800 rounded-tl-none border border-purple-100'
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <p className="leading-relaxed">{message.content}</p>
+                      <span className={`text-xs block mt-2 ${
+                        message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </motion.div>
                   </div>
-                  <div className={`p-4 rounded-2xl ${
-                    message.sender === 'user' 
-                      ? 'bg-purple-600 text-white rounded-tr-none' 
-                      : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                  }`}>
-                    <p>{message.content}</p>
-                    <span className="text-xs opacity-70 block mt-1">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            
             {isLoading && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 className="flex justify-start"
               >
-                <div className="bg-gray-100 p-4 rounded-2xl rounded-tl-none">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center shadow-md">
+                    <Bot size={16} className="text-white" />
+                  </div>
+                  <div className="bg-white/80 p-4 rounded-2xl rounded-tl-none shadow-md backdrop-blur-sm border border-purple-100">
+                    <div className="flex space-x-2">
+                      <motion.div 
+                        className="w-2 h-2 bg-purple-600 rounded-full"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                      />
+                      <motion.div 
+                        className="w-2 h-2 bg-purple-600 rounded-full"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                      />
+                      <motion.div 
+                        className="w-2 h-2 bg-purple-600 rounded-full"
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                      />
+                    </div>
                   </div>
                 </div>
               </motion.div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="flex gap-3">
-            <Input
-              placeholder="Ask me anything about your studies..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1 border-purple-200 focus:border-purple-500"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={isLoading || !newMessage.trim()}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6"
+          {/* Suggested Questions */}
+          {messages.length === 1 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="px-6 pb-4"
             >
-              <Send size={18} />
-            </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {suggestedQuestions.map((question, index) => (
+                  <motion.button
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.9 + index * 0.1 }}
+                    onClick={() => handleSuggestedQuestion(question)}
+                    className="p-3 text-sm text-left bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-all duration-300 hover:shadow-md"
+                  >
+                    {question}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Input Area */}
+          <div className="p-6 border-t border-purple-100">
+            <div className="flex gap-3">
+              <Input
+                placeholder="Ask me anything about study tips, health, or university life..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                className="flex-1 border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/70 backdrop-blur-sm"
+                disabled={isLoading}
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={isLoading || !newMessage.trim()}
+                className="cu-button"
+              >
+                <Send size={18} />
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-center mt-4 space-x-4 text-sm text-purple-600">
+              <div className="flex items-center space-x-1">
+                <BookOpen className="w-4 h-4" />
+                <span>Study Tips</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Heart className="w-4 h-4" />
+                <span>Health Advice</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Calculator className="w-4 h-4" />
+                <span>Academic Help</span>
+              </div>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
     </div>
   );
