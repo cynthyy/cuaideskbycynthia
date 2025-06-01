@@ -40,7 +40,7 @@ const Footer = () => {
         
         <div className="border-t border-purple-600 mt-6 pt-6 text-center">
           <p className="text-sm text-purple-200">
-            © 2024 CU AI Desk. Empowering academic excellence and personal growth.
+            © 2025 CU AI Desk. Empowering academic excellence and personal growth.
           </p>
         </div>
       </div>
