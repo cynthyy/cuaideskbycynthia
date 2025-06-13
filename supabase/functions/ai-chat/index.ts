@@ -1,4 +1,5 @@
 
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -50,7 +51,7 @@ Always be encouraging, supportive, and provide practical advice. Reference Coven
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: messages,
         max_tokens: 500,
         temperature: 0.7,
@@ -86,3 +87,4 @@ Always be encouraging, supportive, and provide practical advice. Reference Coven
     });
   }
 });
+
