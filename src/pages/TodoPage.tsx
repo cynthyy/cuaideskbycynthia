@@ -27,6 +27,27 @@ interface Task {
 
 const categories = ["Academic", "Health", "Fitness", "Social", "General"];
 
+// Helper function to ensure priority is valid
+const validatePriority = (priority: string | null): 'high' | 'medium' | 'low' => {
+  if (priority === 'high' || priority === 'medium' || priority === 'low') {
+    return priority;
+  }
+  return 'medium'; // Default fallback
+};
+
+// Helper function to transform database task to Task interface
+const transformDatabaseTask = (dbTask: any): Task => ({
+  id: dbTask.id,
+  title: dbTask.title,
+  description: dbTask.description || undefined,
+  is_completed: Boolean(dbTask.is_completed),
+  priority: validatePriority(dbTask.priority),
+  due_date: dbTask.due_date || undefined,
+  category: dbTask.category || 'General',
+  created_at: dbTask.created_at,
+  updated_at: dbTask.updated_at
+});
+
 const TodoPage = () => {
   const { user, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -54,7 +75,9 @@ const TodoPage = () => {
 
       if (error) throw error;
 
-      setTasks(data || []);
+      // Transform database tasks to match our Task interface
+      const transformedTasks = (data || []).map(transformDatabaseTask);
+      setTasks(transformedTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast.error('Failed to load tasks');
@@ -82,7 +105,9 @@ const TodoPage = () => {
 
       if (error) throw error;
 
-      setTasks(prev => [data, ...prev]);
+      // Transform the new task and add to state
+      const transformedTask = transformDatabaseTask(data);
+      setTasks(prev => [transformedTask, ...prev]);
       setNewTask('');
       setNewTaskPriority('medium');
       setNewTaskCategory('General');
