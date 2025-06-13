@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,10 +25,9 @@ import {
 interface Reminder {
   id: string;
   title: string;
-  description: string;
-  date: string;
-  time: string;
-  active: boolean;
+  description: string | null;
+  reminder_time: string;
+  is_completed: boolean;
   created_at: string;
   user_id: string;
 }
@@ -54,12 +54,12 @@ const RemindersPage = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('reminders' as any)
+        .from('reminders')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReminders((data as unknown as Reminder[]) || []);
+      setReminders(data || []);
     } catch (error: any) {
       console.error('Error fetching reminders:', error);
       toast.error('Failed to load reminders');
@@ -72,22 +72,24 @@ const RemindersPage = () => {
     if (!formData.title || !formData.date || !formData.time || !user) return;
 
     try {
+      // Combine date and time into a proper timestamp
+      const reminderDateTime = new Date(`${formData.date}T${formData.time}`).toISOString();
+      
       const { data, error } = await supabase
-        .from('reminders' as any)
+        .from('reminders')
         .insert({
           title: formData.title,
-          description: formData.description,
-          date: formData.date,
-          time: formData.time,
+          description: formData.description || null,
+          reminder_time: reminderDateTime,
           user_id: user.id,
-          active: true
+          is_completed: false
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setReminders(prev => [data as unknown as Reminder, ...prev]);
+      setReminders(prev => [data, ...prev]);
       setFormData({ title: '', description: '', date: '', time: '' });
       setShowForm(false);
       toast.success('Reminder created successfully');
@@ -100,7 +102,7 @@ const RemindersPage = () => {
   const deleteReminder = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('reminders' as any)
+        .from('reminders')
         .delete()
         .eq('id', id);
 
@@ -117,21 +119,29 @@ const RemindersPage = () => {
   const toggleReminder = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('reminders' as any)
-        .update({ active: !currentStatus })
+        .from('reminders')
+        .update({ is_completed: !currentStatus })
         .eq('id', id);
 
       if (error) throw error;
 
       setReminders(prev => prev.map(reminder => 
-        reminder.id === id ? { ...reminder, active: !currentStatus } : reminder
+        reminder.id === id ? { ...reminder, is_completed: !currentStatus } : reminder
       ));
       
-      toast.success(`Reminder ${!currentStatus ? 'activated' : 'deactivated'}`);
+      toast.success(`Reminder ${!currentStatus ? 'completed' : 'marked as pending'}`);
     } catch (error: any) {
       console.error('Error updating reminder:', error);
       toast.error('Failed to update reminder');
     }
+  };
+
+  const formatDateTime = (reminderTime: string) => {
+    const date = new Date(reminderTime);
+    return {
+      date: date.toLocaleDateString(),
+      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
   };
 
   return (
@@ -242,100 +252,103 @@ const RemindersPage = () => {
             </div>
           ) : (
             <AnimatePresence>
-              {reminders.map((reminder, index) => (
-                <motion.div
-                  key={reminder.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className={`shadow-lg transition-all duration-300 hover:shadow-xl ${
-                    reminder.active ? 'bg-white border-purple-100' : 'bg-gray-50 border-gray-200'
-                  }`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <motion.div
-                              animate={{ 
-                                scale: reminder.active ? [1, 1.2, 1] : 1,
-                                rotate: reminder.active ? [0, 15, -15, 0] : 0
-                              }}
-                              transition={{ 
-                                duration: 2, 
-                                repeat: reminder.active ? Infinity : 0,
-                                repeatDelay: 3 
-                              }}
-                            >
-                              <Bell size={20} className={reminder.active ? 'text-amber-500' : 'text-gray-400'} />
-                            </motion.div>
-                            <h3 className={`text-lg font-semibold ${
-                              reminder.active ? 'text-gray-800' : 'text-gray-500'
-                            }`}>
-                              {reminder.title}
-                            </h3>
-                            <Badge className={reminder.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
-                              {reminder.active ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </div>
-                          {reminder.description && (
-                            <p className="text-gray-600 mb-3">{reminder.description}</p>
-                          )}
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              {new Date(reminder.date).toLocaleDateString()}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock size={14} />
-                              {reminder.time}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleReminder(reminder.id, reminder.active)}
-                            className="border-purple-200 text-purple-600 hover:bg-purple-50"
-                          >
-                            {reminder.active ? 'Deactivate' : 'Activate'}
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-red-200 text-red-600 hover:bg-red-50"
+              {reminders.map((reminder, index) => {
+                const { date, time } = formatDateTime(reminder.reminder_time);
+                return (
+                  <motion.div
+                    key={reminder.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className={`shadow-lg transition-all duration-300 hover:shadow-xl ${
+                      !reminder.is_completed ? 'bg-white border-purple-100' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <motion.div
+                                animate={{ 
+                                  scale: !reminder.is_completed ? [1, 1.2, 1] : 1,
+                                  rotate: !reminder.is_completed ? [0, 15, -15, 0] : 0
+                                }}
+                                transition={{ 
+                                  duration: 2, 
+                                  repeat: !reminder.is_completed ? Infinity : 0,
+                                  repeatDelay: 3 
+                                }}
                               >
-                                <Trash2 size={16} />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Reminder</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{reminder.title}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => deleteReminder(reminder.id)}
-                                  className="bg-red-600 hover:bg-red-700"
+                                <Bell size={20} className={!reminder.is_completed ? 'text-amber-500' : 'text-gray-400'} />
+                              </motion.div>
+                              <h3 className={`text-lg font-semibold ${
+                                !reminder.is_completed ? 'text-gray-800' : 'text-gray-500'
+                              }`}>
+                                {reminder.title}
+                              </h3>
+                              <Badge className={!reminder.is_completed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>
+                                {!reminder.is_completed ? 'Active' : 'Completed'}
+                              </Badge>
+                            </div>
+                            {reminder.description && (
+                              <p className="text-gray-600 mb-3">{reminder.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Calendar size={14} />
+                                {date}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock size={14} />
+                                {time}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => toggleReminder(reminder.id, reminder.is_completed)}
+                              className="border-purple-200 text-purple-600 hover:bg-purple-50"
+                            >
+                              {reminder.is_completed ? 'Mark Pending' : 'Mark Complete'}
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-red-200 text-red-600 hover:bg-red-50"
                                 >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 size={16} />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Reminder</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{reminder.title}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => deleteReminder(reminder.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           )}
         </div>
