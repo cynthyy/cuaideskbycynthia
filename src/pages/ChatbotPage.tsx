@@ -6,6 +6,8 @@ import { Send, Bot, User, Sparkles, BookOpen, Heart, Calculator, Loader2 } from 
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/context/AuthContext";
+import { Navigate } from "react-router-dom";
 
 interface ChatMessage {
   id: string;
@@ -15,9 +17,11 @@ interface ChatMessage {
 }
 
 const ChatbotPage = () => {
+  const { user, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -28,15 +32,64 @@ const ChatbotPage = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Load chat history when user is authenticated
   useEffect(() => {
-    const welcomeMessage: ChatMessage = {
-      id: 'welcome',
-      content: "Hello! I'm your CU AI Assistant! 🤖✨ I'm here to help you with study tips, health advice, university life, and much more. What would you like to know today?",
-      sender: 'bot',
-      timestamp: new Date()
-    };
-    setMessages([welcomeMessage]);
-  }, []);
+    if (user) {
+      loadChatHistory();
+    }
+  }, [user]);
+
+  const loadChatHistory = async () => {
+    try {
+      setLoadingMessages(true);
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (data.length === 0) {
+        // Add welcome message for new users
+        const welcomeMessage: ChatMessage = {
+          id: 'welcome',
+          content: "Hello! I'm your CU AI Assistant! 🤖✨ I'm here to help you with study tips, health advice, university life, and much more. What would you like to know today?",
+          sender: 'bot',
+          timestamp: new Date()
+        };
+        setMessages([welcomeMessage]);
+        
+        // Save welcome message to database
+        await supabase.from('chat_history').insert({
+          content: welcomeMessage.content,
+          sender: welcomeMessage.sender,
+          user_id: user!.id
+        });
+      } else {
+        // Convert database messages to UI format
+        const formattedMessages: ChatMessage[] = data.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          sender: msg.sender as 'user' | 'bot',
+          timestamp: new Date(msg.created_at)
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      toast.error('Failed to load chat history');
+      // Still show welcome message if loading fails
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        content: "Hello! I'm your CU AI Assistant! 🤖✨ I'm here to help you with study tips, health advice, university life, and much more. What would you like to know today?",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
 
   const suggestedQuestions = [
     "How can I improve my study habits?",
@@ -46,7 +99,7 @@ const ChatbotPage = () => {
   ];
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || isLoading) return;
+    if (!newMessage.trim() || isLoading || !user) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -61,6 +114,13 @@ const ChatbotPage = () => {
     setIsLoading(true);
 
     try {
+      // Save user message to database
+      await supabase.from('chat_history').insert({
+        content: userMessage.content,
+        sender: userMessage.sender,
+        user_id: user.id
+      });
+
       // Prepare conversation history for context
       const conversationHistory = messages.map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
@@ -94,6 +154,13 @@ const ChatbotPage = () => {
 
       setMessages(prev => [...prev, botMessage]);
       
+      // Save AI response to database
+      await supabase.from('chat_history').insert({
+        content: botMessage.content,
+        sender: botMessage.sender,
+        user_id: user.id
+      });
+      
     } catch (error) {
       console.error('Error getting AI response:', error);
       toast.error('Failed to get AI response. Please try again.');
@@ -106,6 +173,17 @@ const ChatbotPage = () => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, fallbackMessage]);
+      
+      // Save fallback message to database
+      try {
+        await supabase.from('chat_history').insert({
+          content: fallbackMessage.content,
+          sender: fallbackMessage.sender,
+          user_id: user.id
+        });
+      } catch (dbError) {
+        console.error('Error saving fallback message:', dbError);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +192,20 @@ const ChatbotPage = () => {
   const handleSuggestedQuestion = (question: string) => {
     setNewMessage(question);
   };
+
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <div className="h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect to auth if not logged in
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-100">
@@ -172,51 +264,58 @@ const ChatbotPage = () => {
         >
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto space-y-4 p-6 max-h-96">
-            <AnimatePresence>
-              {messages.map((message, index) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, x: message.sender === 'user' ? 20 : -20, y: 10 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`flex items-start gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <motion.div 
-                      className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${
-                        message.sender === 'user' 
-                          ? 'bg-gradient-to-r from-purple-600 to-purple-700' 
-                          : 'bg-gradient-to-r from-blue-500 to-purple-600'
-                      }`}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {message.sender === 'user' ? 
-                        <User size={16} className="text-white" /> : 
-                        <Bot size={16} className="text-white" />
-                      }
-                    </motion.div>
-                    <motion.div 
-                      className={`p-4 rounded-2xl shadow-md backdrop-blur-sm ${
-                        message.sender === 'user' 
-                          ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-tr-none' 
-                          : 'bg-white/80 text-gray-800 rounded-tl-none border border-purple-100'
-                      }`}
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                      <span className={`text-xs block mt-2 ${
-                        message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
-                      }`}>
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {loadingMessages ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                <span className="ml-2 text-purple-600">Loading your chat history...</span>
+              </div>
+            ) : (
+              <AnimatePresence>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, x: message.sender === 'user' ? 20 : -20, y: 10 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: index * 0.1, duration: 0.5 }}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`flex items-start gap-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+                      <motion.div 
+                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md ${
+                          message.sender === 'user' 
+                            ? 'bg-gradient-to-r from-purple-600 to-purple-700' 
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {message.sender === 'user' ? 
+                          <User size={16} className="text-white" /> : 
+                          <Bot size={16} className="text-white" />
+                        }
+                      </motion.div>
+                      <motion.div 
+                        className={`p-4 rounded-2xl shadow-md backdrop-blur-sm ${
+                          message.sender === 'user' 
+                            ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-tr-none' 
+                            : 'bg-white/80 text-gray-800 rounded-tl-none border border-purple-100'
+                        }`}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        <span className={`text-xs block mt-2 ${
+                          message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
+                        }`}>
+                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
             
             {isLoading && (
               <motion.div
@@ -241,7 +340,7 @@ const ChatbotPage = () => {
           </div>
 
           {/* Suggested Questions */}
-          {messages.length === 1 && !isLoading && (
+          {messages.length === 1 && !isLoading && !loadingMessages && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -274,11 +373,11 @@ const ChatbotPage = () => {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                 className="flex-1 border-purple-200 focus:border-purple-500 focus:ring-purple-500 bg-white/70 backdrop-blur-sm"
-                disabled={isLoading}
+                disabled={isLoading || loadingMessages}
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={isLoading || !newMessage.trim()}
+                disabled={isLoading || !newMessage.trim() || loadingMessages}
                 className="cu-button"
               >
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={18} />}
