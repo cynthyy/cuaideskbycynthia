@@ -12,7 +12,7 @@ import { Navigate } from "react-router-dom";
 interface ChatMessage {
   id: string;
   content: string;
-  sender: 'user' | 'bot';
+  sender: 'user' | 'ai';  // Changed from 'bot' to 'ai' to match database constraint
   timestamp: Date;
 }
 
@@ -55,7 +55,7 @@ const ChatbotPage = () => {
         const welcomeMessage: ChatMessage = {
           id: 'welcome',
           content: "Hello! I'm your CU AI Assistant! 🤖✨ I'm here to help you with study tips, health advice, university life, and much more. What would you like to know today?",
-          sender: 'bot',
+          sender: 'ai',  // Changed from 'bot' to 'ai'
           timestamp: new Date()
         };
         setMessages([welcomeMessage]);
@@ -71,7 +71,7 @@ const ChatbotPage = () => {
         const formattedMessages: ChatMessage[] = data.map(msg => ({
           id: msg.id,
           content: msg.content,
-          sender: msg.sender as 'user' | 'bot',
+          sender: msg.sender as 'user' | 'ai',  // Changed from 'bot' to 'ai'
           timestamp: new Date(msg.created_at)
         }));
         setMessages(formattedMessages);
@@ -83,7 +83,7 @@ const ChatbotPage = () => {
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
         content: "Hello! I'm your CU AI Assistant! 🤖✨ I'm here to help you with study tips, health advice, university life, and much more. What would you like to know today?",
-        sender: 'bot',
+        sender: 'ai',  // Changed from 'bot' to 'ai'
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
@@ -149,7 +149,7 @@ const ChatbotPage = () => {
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: data.response,
-        sender: 'bot',
+        sender: 'ai',  // Changed from 'bot' to 'ai'
         timestamp: new Date()
       };
 
@@ -158,7 +158,7 @@ const ChatbotPage = () => {
       // Save AI response to database - this was the missing piece!
       const { error: saveError } = await supabase.from('chat_history').insert({
         content: botMessage.content,
-        sender: botMessage.sender,
+        sender: botMessage.sender,  // Now using 'ai' instead of 'bot'
         user_id: user.id
       });
 
@@ -175,7 +175,7 @@ const ChatbotPage = () => {
       const fallbackMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: "I apologize, but I'm having trouble connecting to my AI brain right now. Please try again in a moment, or check if your internet connection is stable. 🤖",
-        sender: 'bot',
+        sender: 'ai',  // Changed from 'bot' to 'ai'
         timestamp: new Date()
       };
       setMessages(prev => [...prev, fallbackMessage]);
@@ -184,7 +184,7 @@ const ChatbotPage = () => {
       try {
         await supabase.from('chat_history').insert({
           content: fallbackMessage.content,
-          sender: fallbackMessage.sender,
+          sender: fallbackMessage.sender,  // Now using 'ai' instead of 'bot'
           user_id: user.id
         });
       } catch (dbError) {
