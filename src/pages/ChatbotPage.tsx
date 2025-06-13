@@ -2,8 +2,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User, Sparkles, BookOpen, Heart, Calculator } from "lucide-react";
+import { Send, Bot, User, Sparkles, BookOpen, Heart, Calculator, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
 interface ChatMessage {
   id: string;
@@ -44,7 +46,7 @@ const ChatbotPage = () => {
   ];
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -54,27 +56,59 @@ const ChatbotPage = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentMessage = newMessage;
     setNewMessage('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "That's a great question! Based on research and student experiences, here's what I recommend...",
-        "I'd be happy to help you with that! Here are some proven strategies that work well for Covenant University students...",
-        "Excellent topic! Let me share some insights that can really make a difference in your academic journey...",
-        "I understand your concern. Here's some practical advice that many students find helpful..."
-      ];
+    try {
+      // Prepare conversation history for context
+      const conversationHistory = messages.map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+
+      console.log('Calling AI chat function...');
+      
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
+          message: currentMessage,
+          conversationHistory: conversationHistory
+        }
+      });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to get AI response');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'AI response failed');
+      }
 
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: responses[Math.floor(Math.random() * responses.length)] + " This will be connected to a real AI backend soon for more personalized responses! 🚀",
+        content: data.response,
         sender: 'bot',
         timestamp: new Date()
       };
+
       setMessages(prev => [...prev, botMessage]);
+      
+    } catch (error) {
+      console.error('Error getting AI response:', error);
+      toast.error('Failed to get AI response. Please try again.');
+      
+      // Add fallback message
+      const fallbackMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: "I apologize, but I'm having trouble connecting to my AI brain right now. Please try again in a moment, or check if your internet connection is stable. 🤖",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, fallbackMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleSuggestedQuestion = (question: string) => {
@@ -172,7 +206,7 @@ const ChatbotPage = () => {
                       whileHover={{ scale: 1.02 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <p className="leading-relaxed">{message.content}</p>
+                      <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
                       <span className={`text-xs block mt-2 ${
                         message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
                       }`}>
@@ -195,22 +229,9 @@ const ChatbotPage = () => {
                     <Bot size={16} className="text-white" />
                   </div>
                   <div className="bg-white/80 p-4 rounded-2xl rounded-tl-none shadow-md backdrop-blur-sm border border-purple-100">
-                    <div className="flex space-x-2">
-                      <motion.div 
-                        className="w-2 h-2 bg-purple-600 rounded-full"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                      />
-                      <motion.div 
-                        className="w-2 h-2 bg-purple-600 rounded-full"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-                      />
-                      <motion.div 
-                        className="w-2 h-2 bg-purple-600 rounded-full"
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
-                      />
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                      <span className="text-gray-600">AI is thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -220,7 +241,7 @@ const ChatbotPage = () => {
           </div>
 
           {/* Suggested Questions */}
-          {messages.length === 1 && (
+          {messages.length === 1 && !isLoading && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -260,7 +281,7 @@ const ChatbotPage = () => {
                 disabled={isLoading || !newMessage.trim()}
                 className="cu-button"
               >
-                <Send size={18} />
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send size={18} />}
               </Button>
             </div>
             
