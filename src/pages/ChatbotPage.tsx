@@ -45,6 +45,7 @@ const ChatbotPage = () => {
       const { data, error } = await supabase
         .from('chat_history')
         .select('*')
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -154,12 +155,17 @@ const ChatbotPage = () => {
 
       setMessages(prev => [...prev, botMessage]);
       
-      // Save AI response to database
-      await supabase.from('chat_history').insert({
+      // Save AI response to database - this was the missing piece!
+      const { error: saveError } = await supabase.from('chat_history').insert({
         content: botMessage.content,
         sender: botMessage.sender,
         user_id: user.id
       });
+
+      if (saveError) {
+        console.error('Error saving AI response:', saveError);
+        // Don't show error to user since the message was displayed successfully
+      }
       
     } catch (error) {
       console.error('Error getting AI response:', error);
