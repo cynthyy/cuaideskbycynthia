@@ -50,11 +50,7 @@ export const useReminderNotifications = ({ reminders, enabled }: UseReminderNoti
               {
                 body: reminder.description || 'Your reminder is due now!',
                 tag: reminder.id,
-                requireInteraction: true,
-                actions: [
-                  { action: 'mark-complete', title: 'Mark Complete' },
-                  { action: 'dismiss', title: 'Dismiss' }
-                ]
+                requireInteraction: true
               }
             );
           }
