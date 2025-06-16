@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Plus, Calendar, Clock, Trash2 } from "lucide-react";
+import { Bell, Plus, Calendar, Clock, Trash2, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +21,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { useReminderNotifications } from "@/hooks/useReminderNotifications";
 
 interface Reminder {
   id: string;
@@ -36,7 +42,11 @@ interface Reminder {
 const RemindersPage = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('reminders-notifications-enabled') === 'true';
+  });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -44,6 +54,17 @@ const RemindersPage = () => {
     time: ''
   });
   const { user, loading: authLoading } = useAuth();
+
+  // Initialize notification system
+  const { notifiedCount } = useReminderNotifications({
+    reminders,
+    enabled: notificationsEnabled
+  });
+
+  // Save notification preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('reminders-notifications-enabled', notificationsEnabled.toString());
+  }, [notificationsEnabled]);
 
   // Redirect to auth if not authenticated
   if (!authLoading && !user) {
@@ -227,7 +248,39 @@ const RemindersPage = () => {
             ⏰ Smart Reminders
           </motion.h1>
           <p className="text-purple-600">Never miss an important deadline</p>
+          {notificationsEnabled && (
+            <Badge className="bg-green-100 text-green-800 mt-2">
+              <Bell size={12} className="mr-1" />
+              Notifications Active
+            </Badge>
+          )}
         </div>
+
+        {/* Settings Toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <Collapsible open={showSettings} onOpenChange={setShowSettings}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full border-purple-200 text-purple-600 hover:bg-purple-50"
+              >
+                <Settings size={16} className="mr-2" />
+                Notification Settings
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4">
+              <NotificationSettings
+                notificationsEnabled={notificationsEnabled}
+                onToggleNotifications={setNotificationsEnabled}
+              />
+            </CollapsibleContent>
+          </Collapsible>
+        </motion.div>
 
         {/* Add Reminder Button */}
         <motion.div
